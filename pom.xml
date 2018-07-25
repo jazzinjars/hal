@@ -4,23 +4,35 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- TO BE EXTRACTED on a PARENT POM -->
-
-    <groupId>com.jazzinjars.jakartaee.jax-rs</groupId>
-    <artifactId>sse-producer</artifactId>
+    <groupId>com.jazzinjars</groupId>
+    <artifactId>jakartaee-parent</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>Jakarta EE Samples: root</name>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-
         <java.min.version>1.8</java.min.version>
         <maven.min.version>3.0.0</maven.min.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <maven.test.skip>false</maven.test.skip>
+        <skipTests>false</skipTests>
+
+        <!-- APPServers versions -->
+        <payara.version>5.182</payara.version>
+        <payara.micro.version>5.182</payara.micro.version>
+        <glassfish.version>5.0</glassfish.version>
+        <tomcat.version>9.0.10</tomcat.version>
     </properties>
 
-    <packaging>war</packaging>
-    <name>Jakarta EE: JAX-RS - SSE Producer</name>
+    <!-- One JakartaEE Spec -> One Module -->
+    <modules>
+        <module>jax-rs</module>
+    </modules>
+    
 
     <dependencyManagement>
         <dependencies>
@@ -39,7 +51,7 @@
             <dependency>
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
-                <version>1.4.196</version>
+                <version>1.4.197</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
