@@ -31,6 +31,7 @@
     <!-- One JakartaEE Spec -> One Module -->
     <modules>
         <module>jax-rs</module>
+        <module>test-utils</module>
     </modules>
     
 

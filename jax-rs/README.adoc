@@ -1,0 +1,6 @@
+= Jakarta EE 8: JAX-RS
+
+Java API for RESTful Web Services
+
+== Samples
+* Producer

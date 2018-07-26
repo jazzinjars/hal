@@ -15,7 +15,7 @@
     <name>Jakarta EE: JAX-RS</name>
 
     <modules>
-        <module>sse-producer</module>
+        <module>sseproducer</module>
     </modules>
 
 </project>
