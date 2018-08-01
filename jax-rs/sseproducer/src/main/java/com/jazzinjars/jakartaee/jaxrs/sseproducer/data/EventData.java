@@ -1,12 +1,14 @@
 package com.jazzinjars.jakartaee.jaxrs.sseproducer.data;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.json.bind.JsonbBuilder;
 import java.util.Date;
 import java.util.UUID;
 
 @Data
+@NoArgsConstructor
 public class EventData {
 
     private Date time;

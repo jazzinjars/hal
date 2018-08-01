@@ -14,9 +14,9 @@ import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import javax.json.bind.Jsonb;
@@ -49,7 +49,7 @@ public class SSEResourceTest {
                 .addClasses(RestApplication.class, SSEResource.class, EventData.class, JsonbBuilder.class, Jsonb.class);
     }
 
-    @BeforeAll
+    @Before
     public void setup() {
         this.sseClient = ClientBuilder.newClient();
         this.target = this.sseClient.target(base + "rest/sse/register");
@@ -57,7 +57,7 @@ public class SSEResourceTest {
         System.out.println("SSE Event source created........");
     }
 
-    @AfterAll
+    @After
     public void teardown() {
         eventSource.close();
         System.out.println("Closed SSE Event Source..");

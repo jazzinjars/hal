@@ -106,7 +106,7 @@
         </dependencies>
     </dependencyManagement>
 
-    <!-- MAVEN BUILD -->
+    <!-- ======== MAVEN BUILD ======== -->
     <build>
         <finalName>${project.artifactId}</finalName>
 
@@ -158,6 +158,7 @@
                             <message>At least Maven in version
                                 ${maven.min.version} is
                                 required.</message>
+                            <version>${maven.min.version}</version>
                         </requireMavenVersion>
                         <requireJavaVersion>
                             <message>At least a JDK in version
@@ -188,7 +189,7 @@
         </plugins>
     </build>
 
-    <!-- PROFILES -->
+    <!-- ======== PROFILES ======== -->
     <profiles>
 
         <!-- PAYARA -->
@@ -213,10 +214,47 @@
                 </dependency>
             </dependencies>
 
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>process-test-classes</phase>
+                                <goals>
+                                    <goal>copy</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>fish.payara.extras</groupId>
+                                            <artifactId>payara-micro</artifactId>
+                                            <version>${payara.micro.version}</version>
+                                            <overWrite>false</overWrite>
+                                            <outputDirectory>${session.executionRootDirectory}/target/</outputDirectory>
+                                            <destFileName>payara-micro-${payara.micro.version}.jar</destFileName>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <environmentVariables>
+                                <MICRO_JAR>${session.executionRootDirectory}/target/payara-micro-${payara.micro.version}.jar</MICRO_JAR>
+                            </environmentVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+
         </profile>
     </profiles>
 
-    <!-- DEPENDENCIES -->
+    <!-- ======== DEPENDENCIES ======== -->
     <dependencies>
         <dependency>
             <groupId>javax</groupId>

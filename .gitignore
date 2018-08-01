@@ -68,6 +68,9 @@ modules.xml
 # Compiled class file
 *.class
 
+# Target folders
+target/
+
 # Log file
 *.log
 
