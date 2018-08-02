@@ -4,11 +4,11 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.jboss.shrinkwrap.api.ShrinkWrap.create;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import com.jazzinjars.jakartaee.jaxrs.sseproducer.data.EventData;
 import com.jazzinjars.jakartaee.jaxrs.sseproducer.producer.SSEResource;
 import com.jazzinjars.jakartaee.jaxrs.sseproducer.rest.RestApplication;
+import org.hamcrest.Matchers;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
@@ -24,78 +24,94 @@ import javax.json.bind.JsonbBuilder;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.sse.InboundSseEvent;
 import javax.ws.rs.sse.SseEventSource;
-import java.io.IOException;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.Date;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
 
 @RunWith(Arquillian.class)
 public class SSEResourceTest {
+
+    private static final String[] EVENT_TYPES = {"INIT", "EVENT", "FINISH"};
 
     @ArquillianResource
     private URL base;
 
     private Client sseClient;
     private WebTarget target;
-
-    SseEventSource eventSource;
-
-    String[] types = {"INIT", "EVENT", "FINISH"};
+    private SseEventSource eventSource;
 
     @Deployment
     public static WebArchive createDeployment() {
         return create(WebArchive.class)
-                .addClasses(RestApplication.class, SSEResource.class, EventData.class, JsonbBuilder.class, Jsonb.class);
+                .addClasses(RestApplication.class, SSEResource.class, EventData.class);
     }
 
+    /**
+     * Initializes the client, target and the eventSource used to create event consumers
+     */
     @Before
     public void setup() {
         this.sseClient = ClientBuilder.newClient();
         this.target = this.sseClient.target(base + "rest/sse/register");
-        eventSource = SseEventSource.target(target).build();
+        this.eventSource = SseEventSource.target(target).build();
         System.out.println("SSE Event source created........");
     }
 
     @After
     public void teardown() {
-        eventSource.close();
+        this.eventSource.close();
         System.out.println("Closed SSE Event Source..");
-        sseClient.close();
+        this.sseClient.close();
         System.out.println("Closed JAX-RS client..");
     }
 
-    @Test
+    /**
+     * Registers reaction on events, waits for events and checks their content
+     * @throws Exception
+     */
+    @Test(timeout = 5000)
     @RunAsClient
-    public void testSSE() throws IOException {
+    public void testSSE() throws Exception {
 
-        Jsonb jsonb = JsonbBuilder.create();
+        final Queue<Throwable> asyncExceptions = new ConcurrentLinkedQueue<>();
+        final Queue<EventData> receivedEvents = new ConcurrentLinkedQueue<>();
+        // jsonb is thread safe!
+        final Jsonb jsonb = JsonbBuilder.create();
 
-        System.out.println("SSE Client triggered in thread " + Thread.currentThread().getName());
-        try {
-            eventSource.register(
-                    sseEvent -> {
-                        assertTrue(Arrays.asList(types).contains(sseEvent.getName()));
-                        assertNotNull(sseEvent.readData());
+        final Consumer<InboundSseEvent> onEvent =
+                (sseEvent) -> {
 
-                        EventData eventData = jsonb.fromJson(sseEvent.readData(), EventData.class);
-                        assertThat(eventData.getTime(), instanceOf(Date.class));
-                        assertNotNull(eventData.getId());
-                        assertTrue(eventData.getComment().contains("event:"));
+                    assertThat("event type", sseEvent.getName(), Matchers.isOneOf(EVENT_TYPES));
 
-                        System.out.println("\nSSE Event received :: " + eventData.toString() + "\n");
+                    final String data = sseEvent.readData();
+                    System.out.println("Data received as string:\n" + data);
 
-                    },
-                    e -> e.printStackTrace()
-            );
+                    assertNotNull("data received as string", data);
+                    final EventData event = jsonb.fromJson(data, EventData.class);
 
-            eventSource.open();
-            Thread.sleep(1500);
+                    receivedEvents.add(event);
+                    assertThat("event.time", event.getTime(), instanceOf(Date.class));
+                    assertNotNull("event.id", event.getId());
+                    assertThat("event.comment", event.getComment(), Matchers.containsString("event:"));
+        };
 
-        } catch (Exception e) {
-            System.out.println("Error on SSE Test");
-            System.out.println(e.getMessage());
+        this.eventSource.register(onEvent, asyncExceptions::add);
+        System.out.println("Server Side Events Client registered in the test thread.");
+
+        // following line starts acceptation of events.
+        this.eventSource.open();
+
+        // don't end the test until we have all events or timeout or error comes.
+        // this is not an obvious implementation, we only need to hold the test until all events
+        // are asynchronously processed.
+        while (receivedEvents.size() <= 5 && asyncExceptions.isEmpty()) {
+            Thread.sleep(10L);
         }
+        assertThat("receiver exceptions", asyncExceptions, Matchers.emptyIterable());
     }
 
 }

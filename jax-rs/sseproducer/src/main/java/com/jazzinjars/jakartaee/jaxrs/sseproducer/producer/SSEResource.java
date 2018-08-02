@@ -32,19 +32,19 @@ public class SSEResource {
     @Produces(MediaType.SERVER_SENT_EVENTS)
     public void register(@Context SseEventSink eventSink) {
 
-        Jsonb jsonb = JsonbBuilder.create();
-        eventSink.send(sse.newEvent("INIT", new EventData("event:initialized").toString()));
+        final Jsonb jsonb = JsonbBuilder.create();
+        eventSink.send(sse.newEvent("INIT", jsonb.toJson(new EventData("event:initialized"))));
         sseBroadcaster.register(eventSink);
 
         for (int i = 0; i < 5; i++) {
-            sseBroadcaster.broadcast(sse.newEvent("EVENT", new EventData("event:" + 1).toString()));
+            sseBroadcaster.broadcast(sse.newEvent("EVENT", jsonb.toJson(new EventData("event:" + 1))));
             try {
-                Thread.sleep(100);
+                Thread.sleep(10);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-        eventSink.send(sse.newEvent("FINISH", new EventData("event:finished").toString()));
+        eventSink.send(sse.newEvent("FINISH", jsonb.toJson(new EventData("event:finished"))));
     }
 
 }

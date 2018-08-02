@@ -1,6 +1,12 @@
 = Jakarta EE 8 Samples
 
 
-This workspace consists of Jakarta EE 8 Samples. They are categorized in different directories, one for each Technology/JSR.
+This workspace try to sum up some of the technologies used to implement the JAVA Specifications with examples.
 
-Some samples/tests have documentation, otherwise read the code. 
+Some samples/tests have documentation, otherwise read the code.
+
+== Specifications Index
+
+- link:https://github.com/jazzinjars/jakartaEE/tree/master/jax-rs[JAX-RS]
+
+== How to execute Samples

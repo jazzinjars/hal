@@ -3,4 +3,4 @@
 Java API for RESTful Web Services
 
 == Samples
-* Producer
+* - link:https://github.com/jazzinjars/jakartaEE/tree/master/jax-rs/sseproducer[SSEProducer]
