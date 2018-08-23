@@ -1,0 +1,6 @@
+= Jakarta EE 8: CDI
+
+Java API for Context and Dependency Injection
+
+== Samples
+* link:https://github.com/jazzinjars/jakartaEE/tree/master/cdi/discover-modes[DiscoverModes]

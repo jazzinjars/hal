@@ -39,6 +39,7 @@
 
     <modules>
         <module>jax-rs</module>
+        <module>cdi</module>
         <module>test-utils</module>
     </modules>
 
