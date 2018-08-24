@@ -1,7 +1,5 @@
-package com.jazzinjars.jakartaee.cdi.bean.discover.all;
+package com.jazzinjars.jakartaee.cdi.bean.discover;
 
-import com.jazzinjars.jakartaee.cdi.bean.discover.disabled.CdiDisabledBean;
-import com.jazzinjars.jakartaee.cdi.bean.discover.enabled.CdiEnabledBean;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.shrinkwrap.api.Archive;
@@ -18,7 +16,7 @@ import java.util.Set;
 import static org.junit.Assert.assertFalse;
 
 @RunWith(Arquillian.class)
-public class CdiEnabledTest {
+public class CdiEmptyTest {
 
 	@Inject
 	BeanManager beanManager;
@@ -26,7 +24,7 @@ public class CdiEnabledTest {
 	@Deployment
 	public static Archive<?> deploy() {
 		return ShrinkWrap.create(WebArchive.class).addClasses(CdiDisabledBean.class, CdiEnabledBean.class)
-				.addAsWebInfResource("all-beans.xml", "beans.xml");
+				.addAsWebInfResource("empty-beans.xml", "beans.xml");
 	}
 
 	@Test

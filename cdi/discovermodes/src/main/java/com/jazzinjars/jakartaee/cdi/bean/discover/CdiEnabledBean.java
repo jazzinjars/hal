@@ -1,4 +1,4 @@
-package com.jazzinjars.jakartaee.cdi.bean.discover.enabled;
+package com.jazzinjars.jakartaee.cdi.bean.discover;
 
 import javax.enterprise.context.RequestScoped;
 
