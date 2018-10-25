@@ -16,6 +16,7 @@
 
     <modules>
         <module>sseproducer</module>
+        <module>reactive-jaxrs</module>
     </modules>
 
 </project>
