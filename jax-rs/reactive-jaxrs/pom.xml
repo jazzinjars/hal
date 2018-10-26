@@ -15,6 +15,9 @@
 	<jersey.client.version>2.27</jersey.client.version>
 	<spring.boot.version>2.0.6.RELEASE</spring.boot.version>
 	<spring.framework.version>5.1.1.RELEASE</spring.framework.version>
+	<http.client.version>4.5.6</http.client.version>
+	<http.core.version>4.4.10</http.core.version>
+	<jackson.core.version>2.9.7</jackson.core.version>
     </properties>
 
     <dependencies>
@@ -38,12 +41,40 @@
 	    <artifactId>spring-web</artifactId>
 	    <version>${spring.framework.version}</version>
 	</dependency>
+	<dependency>
+	    <groupId>com.fasterxml.jackson.jaxrs</groupId>
+	    <artifactId>jackson-jaxrs-json-provider</artifactId>
+	    <version>${jackson.core.version}</version>
+	</dependency>
+	<dependency>
+	    <groupId>com.fasterxml.jackson.core</groupId>
+	    <artifactId>jackson-databind</artifactId>
+	    <version>${jackson.core.version}</version>
+	</dependency>
 
 	<!-- TEST DEPENDENCIES -->
 	<dependency>
 	    <groupId>org.springframework.boot</groupId>
 	    <artifactId>spring-boot-starter-test</artifactId>
 	    <version>${spring.boot.version}</version>
+	    <scope>test</scope>
+	</dependency>
+	<dependency>
+	    <groupId>org.apache.httpcomponents</groupId>
+	    <artifactId>httpclient</artifactId>
+	    <version>${http.client.version}</version>
+	    <scope>test</scope>
+	    <exclusions>
+		<exclusion>
+		    <artifactId>commons-logging</artifactId>
+		    <groupId>commons-logging</groupId>
+		</exclusion>
+	    </exclusions>
+	</dependency>
+	<dependency>
+	    <groupId>org.apache.httpcomponents</groupId>
+	    <artifactId>httpcore</artifactId>
+	    <version>${http.core.version}</version>
 	    <scope>test</scope>
 	</dependency>
     </dependencies>
