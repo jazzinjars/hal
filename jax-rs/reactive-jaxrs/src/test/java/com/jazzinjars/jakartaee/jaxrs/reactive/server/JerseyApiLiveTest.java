@@ -41,14 +41,14 @@ public class JerseyApiLiveTest {
         ObjectMapper mapper = new ObjectMapper();
         Employee emp = mapper.readValue(httpResponse.getEntity().getContent(), Employee.class);
 
-        Assertions.assertEquals(emp.getName(), "Jane");
+        Assertions.assertEquals(emp.getName(), "Arya");
     }
 
     @Test
     public void givenAddEmployee_whenJsonRequestSent_thenResponseCodeCreated() throws IOException {
         final HttpPost request = new HttpPost(SERVICE_URL);
 
-        Employee emp = new Employee(5, "Johny");
+        Employee emp = new Employee(5, "Margaery");
         ObjectMapper mapper = new ObjectMapper();
         String empJson = mapper.writeValueAsString(emp);
         StringEntity input = new StringEntity(empJson);
@@ -63,7 +63,7 @@ public class JerseyApiLiveTest {
     public void givenAddEmployee_whenRequestForExistingObjectSent_thenResponseCodeConflict() throws IOException {
         final HttpPost request = new HttpPost(SERVICE_URL);
 
-        Employee emp = new Employee(1, "Johny");
+        Employee emp = new Employee(1, "Arya");
         ObjectMapper mapper = new ObjectMapper();
         String empJson = mapper.writeValueAsString(emp);
         StringEntity input = new StringEntity(empJson);
