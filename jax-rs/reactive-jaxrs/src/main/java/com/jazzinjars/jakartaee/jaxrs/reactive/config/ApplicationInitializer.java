@@ -16,6 +16,6 @@ public class ApplicationInitializer implements WebApplicationInitializer {
     public void onStartup(ServletContext servletContext) throws ServletException {
 	AnnotationConfigWebApplicationContext context = new AnnotationConfigWebApplicationContext();
 	servletContext.addListener(new ContextLoaderListener(context));
-	servletContext.setInitParameter("contextConfigLocation", "com.jazzinjars.jakartaee.reactive");
+	servletContext.setInitParameter("contextConfigLocation", "com.jazzinjars.jakartaee.jaxrs.reactive");
     }
 }

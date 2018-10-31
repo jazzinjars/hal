@@ -1,24 +1,37 @@
 package com.jazzinjars.jakartaee.jaxrs.reactive.clientrx;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import io.reactivex.Flowable;
+import org.glassfish.jersey.client.rx.rxjava.RxObservableInvoker;
+import org.glassfish.jersey.client.rx.rxjava.RxObservableInvokerProvider;
+import org.glassfish.jersey.client.rx.rxjava2.RxFlowableInvoker;
+import org.glassfish.jersey.client.rx.rxjava2.RxFlowableInvokerProvider;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Observable;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.InvocationCallback;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static org.assertj.core.api.Assertions.*;
 
 public class ClientOrchestrationIntegrationTest {
 
@@ -58,5 +71,204 @@ public class ClientOrchestrationIntegrationTest {
 
         // used to keep track of the progress of the subsequent calls
         final CountDownLatch completionTracker = new CountDownLatch(expectedHashValues.size());
+
+        userIdService.request().accept(MediaType.APPLICATION_JSON).async().get(new InvocationCallback<List<Long>>() {
+
+               @Override
+               public void completed(List<Long> employeeIds) {
+                   logger.info("[CallbackExample] id-service result: {}", employeeIds);
+                   employeeIds.forEach( (id) -> {
+
+                       nameService.resolveTemplate("userId", id).request().async().get(new InvocationCallback<String>() {
+
+                           @Override
+                           public void completed(String response) {
+                               logger.info("[CallbackExample] name-service result: {}", response);
+                               hashService.resolveTemplate("rawValue", response + id).request().async().get(new InvocationCallback<String>() {
+
+                                   @Override
+                                   public void completed(String s) {
+                                       logger.info("[CallbackExample] hash-service result: {}", response);
+                                       receivedHashValues.add(response);
+                                       completionTracker.countDown();
+                                   }
+
+                                   @Override
+                                   public void failed(Throwable throwable) {
+                                       logger.warn("[CallbackExample] An error has occurred in the hashing request step!", throwable);
+                                   }
+                               });
+                           }
+
+                           @Override
+                           public void failed(Throwable throwable) {
+                               logger.warn("[CallbackExample] An error has occurred in the username request step!", throwable);
+                           }
+                       });
+                   });
+               }
+
+               @Override
+               public void failed(Throwable throwable) {
+                   logger.warn("[CallbackExample] An error has occurred in the userId request step!", throwable);
+               }
+           }
+        );
+
+        waitForAsyncCallsToComplete(receivedHashValues, completionTracker);
+    }
+
+    @Test
+    public void rxOrchestrate() throws InterruptedException {
+        List<String> receivedHashValues = new ArrayList<>();
+
+        // used to keep track of the progress of the subsequent calls
+        final CountDownLatch completionTracker = new CountDownLatch(expectedHashValues.size());
+
+        CompletionStage<List<Long>> userIdStage = userIdService.request()
+                                                    .accept(MediaType.APPLICATION_JSON)
+                                                    .rx()
+                                                    .get(new GenericType<List<Long>>() {})
+                                                    .exceptionally((throwable) -> {
+                                                                logger.warn("[CompletionStageExample] An error has occurred");
+                                                                return null;
+                                                                    });
+
+        userIdStage.thenAcceptAsync(employeeIds -> {
+            logger.info("[CompletionStageExample] id-service result: {}", employeeIds);
+
+            employeeIds.forEach((Long id) -> {
+                CompletableFuture<String> completable = nameService.resolveTemplate("userId", id).request().rx().get(String.class).toCompletableFuture();
+
+                completable.thenAccept( (String username) -> {
+                    logger.info("[CompletionStageExample] name-service result: {}", username);
+                    hashService.resolveTemplate("rawValue", username + id)
+                                .request()
+                                .rx()
+                                .get(String.class)
+                                .toCompletableFuture()
+                                .thenAccept(hashValue -> {
+                                    logger.info("[CompletionStageExample] hash-service result: {}", hashValue);
+                                    receivedHashValues.add(hashValue);
+                                    completionTracker.countDown();
+                                })
+                                .exceptionally((throwable) -> {
+                                    logger.warn("[CompletionStageExample] Hash computation failed for {}", id);
+                                    completionTracker.countDown();
+                                    return null;
+                                });
+                });
+            });
+        });
+
+        waitForAsyncCallsToComplete(receivedHashValues, completionTracker);
+    }
+
+    @Test
+    public void observableJavaOrchestrate() {
+        List<String> receivedHashValues = new ArrayList<>();
+
+        // used to keep track of the progress of the subsequent calls
+        final CountDownLatch completionTracker = new CountDownLatch(expectedHashValues.size());
+
+        Observable<List<Long>> observableUserIdService = userIdService.register(RxObservableInvokerProvider.class)
+                                .request()
+                                .accept(MediaType.APPLICATION_JSON)
+                                .rx(RxObservableInvoker.class)
+                                .get(new GenericType<List<Long>>() {})
+                                .asObservable();
+
+        observableUserIdService.subscribe((List<Long> employeeIds) -> {
+            logger.info("[ObservableExample] id-service result: {}", employeeIds);
+
+            Observable.from(employeeIds).subscribe(id ->
+                    nameService.register(RxObservableInvokerProvider.class)
+                                .resolveTemplate("userId", id)
+                                .request()
+                                .rx(RxObservableInvoker.class)
+                                .get(String.class)
+                                .asObservable()
+                                .doOnError((throwable) -> {
+                                    logger.warn("[ObservableExample] An error has occurred in the username request step {}", throwable.getMessage());
+                                })
+                                .subscribe(username -> {
+
+                                    logger.info("[ObservableExample] name-service result: {}", username);
+                                    hashService.register(RxObservableInvokerProvider.class)
+                                                .resolveTemplate("rawValue", username + id)
+                                                .request()
+                                                .rx(RxObservableInvoker.class)
+                                                .get(String.class)
+                                                .asObservable()
+                                                .doOnError((throwable -> {
+                                                    logger.warn("[ObservableExample] An error has occurred in the hashing request step {}", throwable.getMessage());
+                                                }))
+                                                .subscribe(hashValue -> {
+                                                    logger.info("[ObservableExample] hash-service result: {}", hashValue);
+                                                    receivedHashValues.add(hashValue);
+                                                    completionTracker.countDown();
+                                                });
+                                }));
+        });
+
+        waitForAsyncCallsToComplete(receivedHashValues, completionTracker);
+    }
+
+    @Test
+    public void flowableJavaOrchestrate() throws InterruptedException {
+        List<String> receivedHashValues = new ArrayList<>();
+
+        // used to keep track of the progress of the subsequent calls
+        final CountDownLatch completionTracker = new CountDownLatch(expectedHashValues.size());
+
+        Flowable<List<Long>> userIdFlowable = userIdService.register(RxFlowableInvokerProvider.class)
+                                                .request()
+                                                .rx(RxFlowableInvoker.class)
+                                                .get(new GenericType<List<Long>>(){});
+
+        userIdFlowable.subscribe((List<Long> employeeIds) -> {
+            logger.info("[FlowableExample] id-service result: {}", employeeIds);
+            Flowable.fromIterable(employeeIds)
+                    .subscribe(id -> {
+                        nameService.register(RxFlowableInvokerProvider.class)
+                                    .resolveTemplate("userId", id)
+                                    .request()
+                                    .rx(RxFlowableInvoker.class)
+                                    .get(String.class)
+                                    .doOnError((throwable) -> {
+                                        logger.warn("[FlowableExample] An error has occurred in the username request step {}", throwable.getMessage());
+                                    })
+                                    .subscribe(username -> {
+                                        logger.info("[FlowableExample] name-service result: {}", username);
+                                        hashService.register(RxFlowableInvokerProvider.class)
+                                                    .resolveTemplate("rawValue", username + id)
+                                                    .request()
+                                                    .rx(RxFlowableInvoker.class)
+                                                    .get(String.class)
+                                                    .doOnError((throwable) -> {
+                                                        logger.warn(" [FlowableExample] An error has occurred in the hashing request step!", throwable);
+                                                    })
+                                                    .subscribe(hashValue -> {
+                                                        logger.info("[FlowableExample] hash-service result: {}", hashValue);
+                                                        receivedHashValues.add(hashValue);
+                                                        completionTracker.countDown();
+                                                    });
+                                    });
+                    });
+        });
+
+        waitForAsyncCallsToComplete(receivedHashValues, completionTracker);
+    }
+
+    private void waitForAsyncCallsToComplete(List<String> receivedHashValues, CountDownLatch completionTracker) {
+        try {
+            // wait for inner requests to complete in 10 seconds
+            if (!completionTracker.await(10, TimeUnit.SECONDS)) {
+                logger.warn("[CallbackExample] Some requests didn't complete within the timeout");
+            }
+        } catch (InterruptedException e) {
+            logger.error("Interrupted!", e);
+        }
+        assertThat(receivedHashValues).containsAll(expectedHashValues);
     }
 }

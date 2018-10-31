@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>reactive-jaxrs</artifactId>
+    <packaging>war</packaging>
 
     <properties>
 	<jersey.client.version>2.27</jersey.client.version>
@@ -18,9 +19,119 @@
 	<http.client.version>4.5.6</http.client.version>
 	<http.core.version>4.4.10</http.core.version>
 	<jackson.core.version>2.9.7</jackson.core.version>
+	<servlet.api.version>4.0.1</servlet.api.version>
+	<!-- MavenPlugins -->
+	<cargo.maven.version>1.6.11</cargo.maven.version>
+	<maven.war.version>3.2.2</maven.war.version>
     </properties>
 
+    <profiles>
+	<profile>
+	    <id>live</id>
+	    <build>
+		<plugins>
+		    <plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-surefire-plugin</artifactId>
+			<executions>
+			    <execution>
+				<phase>integration-test</phase>
+				<goals>
+				    <goal>test</goal>
+				</goals>
+				<configuration>
+				    <excludes>
+					<exclude>**/*IntegrationTest.java</exclude>
+					<exclude>**/*IntTest.java</exclude>
+				    </excludes>
+				    <includes>
+					<include>**/*LiveTest.java</include>
+				    </includes>
+				</configuration>
+			    </execution>
+			</executions>
+			<configuration>
+			    <systemPropertyVariables>
+				<test.mime>json</test.mime>
+			    </systemPropertyVariables>
+			</configuration>
+		    </plugin>
+		    <plugin>
+			<groupId>org.codehaus.cargo</groupId>
+			<artifactId>cargo-maven2-plugin</artifactId>
+			<version>${cargo.maven.version}</version>
+			<configuration>
+			    <wait>false</wait>
+			</configuration>
+			<executions>
+			    <execution>
+				<id>start-server</id>
+				<phase>pre-integration-test</phase>
+				<goals>
+				    <goal>start</goal>
+				</goals>
+			    </execution>
+			    <execution>
+				<id>stop-server</id>
+				<phase>post-integration-test</phase>
+				<goals>
+				    <goal>stop</goal>
+				</goals>
+			    </execution>
+			</executions>
+		    </plugin>
+		</plugins>
+	    </build>
+	</profile>
+    </profiles>
+
+    <build>
+	<finalName>reactive-jaxrs</finalName>
+	<plugins>
+	    <plugin>
+		<artifactId>maven-war-plugin</artifactId>
+		<version>${maven.war.version}</version>
+		<configuration>
+		    <failOnMissingWebXml>false</failOnMissingWebXml>
+		</configuration>
+	    </plugin>
+
+	    <plugin>
+		<groupId>org.codehaus.cargo</groupId>
+		<artifactId>cargo-maven2-plugin</artifactId>
+		<version>${cargo.maven.version}</version>
+		<configuration>
+		    <wait>true</wait>
+		    <container>
+			<containerId>jetty9x</containerId>
+			<type>embedded</type>
+		    </container>
+		    <configuration>
+			<properties>
+			    <cargo.servlet.port>8082</cargo.servlet.port>
+			</properties>
+		    </configuration>
+		</configuration>
+	    </plugin>
+	</plugins>
+    </build>
+
     <dependencies>
+	<dependency>
+	    <groupId>org.glassfish.jersey.containers</groupId>
+	    <artifactId>jersey-container-servlet</artifactId>
+	    <version>${jersey.client.version}</version>
+	</dependency>
+	<dependency>
+	    <groupId>org.glassfish.jersey.media</groupId>
+	    <artifactId>jersey-media-json-jackson</artifactId>
+	    <version>${jersey.client.version}</version>
+	</dependency>
+	<dependency>
+	    <groupId>org.glassfish.jersey.core</groupId>
+	    <artifactId>jersey-client</artifactId>
+	    <version>${jersey.client.version}</version>
+	</dependency>
 	<dependency>
 	    <groupId>org.glassfish.jersey.core</groupId>
 	    <artifactId>jersey-client</artifactId>
@@ -30,6 +141,22 @@
 	    <groupId>org.glassfish.jersey.inject</groupId>
 	    <artifactId>jersey-hk2</artifactId>
 	    <version>${jersey.client.version}</version>
+	</dependency>
+	<dependency>
+	    <groupId>org.glassfish.jersey.ext.rx</groupId>
+	    <artifactId>jersey-rx-client-rxjava</artifactId>
+	    <version>${jersey.client.version}</version>
+	</dependency>
+	<dependency>
+	    <groupId>org.glassfish.jersey.ext.rx</groupId>
+	    <artifactId>jersey-rx-client-rxjava2</artifactId>
+	    <version>${jersey.client.version}</version>
+	</dependency>
+	<dependency>
+	    <groupId>javax.servlet</groupId>
+	    <artifactId>javax.servlet-api</artifactId>
+	    <version>${servlet.api.version}</version>
+	    <scope>provided</scope>
 	</dependency>
 	<dependency>
 	    <groupId>org.springframework</groupId>
